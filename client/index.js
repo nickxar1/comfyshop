@@ -2,13 +2,14 @@
 
 // Node.js modules — wrapped in try-catch so the script still runs
 // even when the CEP runtime has Node.js disabled.
-var fs, path, os, http;
+var fs, path, os, http, zlib;
 var _nodeAvailable = false;
 try {
     fs = require("fs");
     path = require("path");
     os = require("os");
     http = require("http");
+    zlib = require("zlib");
     _nodeAvailable = true;
 } catch (e) {
     console.warn("[ComfyUI] Node.js require failed:", e.message);
@@ -223,12 +224,76 @@ var ComfyUIPlugin = (function() {
         });
     }
 
+    // --- PNG encoding helpers ---
+    // We encode PNG manually with Node.js zlib to avoid the HTML5 Canvas
+    // premultiplied-alpha problem: Canvas zeros out RGB when alpha=0,
+    // which destroys the original image data in masked areas.
+
+    function _crc32(buf) {
+        var table = new Uint32Array(256);
+        for (var n = 0; n < 256; n++) {
+            var c = n;
+            for (var k = 0; k < 8; k++) {
+                c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            }
+            table[n] = c;
+        }
+        var crc = 0xFFFFFFFF;
+        for (var i = 0; i < buf.length; i++) {
+            crc = table[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    function _pngChunk(type, data) {
+        var lenBuf = Buffer.alloc(4);
+        lenBuf.writeUInt32BE(data.length, 0);
+        var typeBuf = Buffer.from(type, "ascii");
+        var crcVal = _crc32(Buffer.concat([typeBuf, data]));
+        var crcBuf = Buffer.alloc(4);
+        crcBuf.writeUInt32BE(crcVal, 0);
+        return Buffer.concat([lenBuf, typeBuf, data, crcBuf]);
+    }
+
+    function buildPngRgba(width, height, rgbaPixels) {
+        // Each scanline: 1 filter byte (0 = None) + width*4 RGBA bytes
+        var rowBytes = width * 4 + 1;
+        var raw = Buffer.alloc(rowBytes * height);
+        for (var y = 0; y < height; y++) {
+            raw[y * rowBytes] = 0; // filter: None
+            var srcRow = y * width * 4;
+            var dstRow = y * rowBytes + 1;
+            for (var x = 0; x < width * 4; x++) {
+                raw[dstRow + x] = rgbaPixels[srcRow + x];
+            }
+        }
+        var compressed = zlib.deflateSync(raw);
+        var sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+        var ihdr = Buffer.alloc(13);
+        ihdr.writeUInt32BE(width, 0);
+        ihdr.writeUInt32BE(height, 4);
+        ihdr[8] = 8;  // bit depth
+        ihdr[9] = 6;  // color type: RGBA
+        ihdr[10] = 0; // compression
+        ihdr[11] = 0; // filter method
+        ihdr[12] = 0; // interlace
+        return Buffer.concat([
+            sig,
+            _pngChunk("IHDR", ihdr),
+            _pngChunk("IDAT", compressed),
+            _pngChunk("IEND", Buffer.alloc(0))
+        ]);
+    }
+
     // --- Combine image + mask into a single PNG with alpha ---
     // ComfyUI's LoadImage extracts the mask from the alpha channel:
     //   opaque (alpha=255) → mask=0 → KEEP
     //   transparent (alpha=0) → mask=1 → INPAINT
     // The selection mask from Photoshop is: white=selected=inpaint, black=keep.
     // So: alpha = 255 - maskPixel.
+    //
+    // Canvas is used ONLY for decoding images (reading pixels) — the output
+    // PNG is encoded directly via Node.js zlib to preserve RGB under alpha=0.
 
     function combineImageAndMask(imagePath, maskPath) {
         return new Promise(function(resolve, reject) {
@@ -243,16 +308,14 @@ var ComfyUIPlugin = (function() {
             var loaded = 0;
 
             function onBothLoaded() {
+                // Use canvas ONLY for decoding (reading pixel data is safe)
                 var canvas = document.createElement("canvas");
                 canvas.width = img.width;
                 canvas.height = img.height;
                 var ctx = canvas.getContext("2d");
-
-                // Draw the full RGB image
                 ctx.drawImage(img, 0, 0);
                 var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-                // Draw mask scaled to the same dimensions
                 var mc = document.createElement("canvas");
                 mc.width = canvas.width;
                 mc.height = canvas.height;
@@ -260,19 +323,24 @@ var ComfyUIPlugin = (function() {
                 mctx.drawImage(maskImg, 0, 0, canvas.width, canvas.height);
                 var maskData = mctx.getImageData(0, 0, canvas.width, canvas.height);
 
-                // Bake mask into alpha: white(255) in mask → alpha=0, black(0) → alpha=255
+                // Build RGBA buffer: original RGB + mask→alpha
+                var w = canvas.width;
+                var h = canvas.height;
                 var px = imageData.data;
                 var mx = maskData.data;
-                for (var i = 0; i < px.length; i += 4) {
-                    px[i + 3] = 255 - mx[i]; // R channel of mask → inverted alpha
+                var rgba = Buffer.alloc(w * h * 4);
+                for (var i = 0; i < w * h; i++) {
+                    var si = i * 4;
+                    rgba[si]     = px[si];         // R
+                    rgba[si + 1] = px[si + 1];     // G
+                    rgba[si + 2] = px[si + 2];     // B
+                    rgba[si + 3] = 255 - mx[si];   // A = 255 - mask_R
                 }
-                ctx.putImageData(imageData, 0, 0);
 
-                // Export to PNG file
-                var dataUrl = canvas.toDataURL("image/png");
-                var base64 = dataUrl.split(",")[1];
+                // Encode PNG directly (no Canvas toDataURL — no premultiplied alpha)
+                var pngBuf = buildPngRgba(w, h, rgba);
                 var outPath = path.join(os.tmpdir(), "comfyui_combined_" + Date.now() + ".png");
-                fs.writeFileSync(outPath, Buffer.from(base64, "base64"));
+                fs.writeFileSync(outPath, pngBuf);
                 resolve(outPath);
             }
 
