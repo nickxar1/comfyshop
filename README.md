@@ -15,9 +15,12 @@ A powerful Photoshop plugin that integrates local ComfyUI workflows directly int
 
 Select an area in Photoshop, type a prompt, and hit Generate — the result is automatically imported as a new layer.
 
-| Select area + write prompt | ComfyUI processes the workflow | Result imported into Photoshop |
-|---|---|---|
-| ![Selection](docs/example-selection.png) | ![Processing](docs/example-comfyui.png) | ![Result](docs/example-result.png) |
+| Select area + write prompt |
+| ![Selection](docs/example-selection.png) | 
+| ComfyUI processes the workflow |
+  ![Processing](docs/example-comfyui.png)  | 
+|  Result imported into Photoshop |
+  ![Result](docs/example-result.png)       |
 
 ## Architecture
 
