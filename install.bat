@@ -27,11 +27,12 @@ echo.
 :: Step 2: Copy extension files
 echo [2/3] Installing to: %INSTALL_DIR%
 
-:: Remove old installation if it exists
-if exist "%INSTALL_DIR%" (
-    echo       Removing old installation...
-    rmdir /s /q "%INSTALL_DIR%"
-)
+:: Remove old plugin code (preserve workflows folder with user data)
+if exist "%INSTALL_DIR%\CSXS" rmdir /s /q "%INSTALL_DIR%\CSXS" 2>nul
+if exist "%INSTALL_DIR%\client" rmdir /s /q "%INSTALL_DIR%\client" 2>nul
+if exist "%INSTALL_DIR%\host" rmdir /s /q "%INSTALL_DIR%\host" 2>nul
+if exist "%INSTALL_DIR%\.debug" del /q "%INSTALL_DIR%\.debug" 2>nul
+if exist "%INSTALL_DIR%\config.json" del /q "%INSTALL_DIR%\config.json" 2>nul
 
 :: Create the target directory
 mkdir "%INSTALL_DIR%" 2>nul

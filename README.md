@@ -66,6 +66,8 @@ ComfyUI should start on `http://127.0.0.1:8188`
 3. Restart Photoshop
 4. Go to **Window > Extensions > ComfyUI Integration**
 
+> **Re-installing?** The installer preserves your `workflows/` folder — your custom workflow JSON files will not be deleted when you update the plugin.
+
 **Option B: Manual install**
 
 1. Enable unsigned extensions: open `regedit`, navigate to
