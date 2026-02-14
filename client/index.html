@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ComfyUI Integration</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 16px;
+      margin: 0;
+      background: #2d2d2d;
+      color: #e0e0e0;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section {
+      background: #3a3a3a;
+      padding: 12px;
+      border-radius: 6px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #fff;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #2d2d2d;
+      color: #e0e0e0;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 60px;
+      resize: vertical;
+      font-family: monospace;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #0d99ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    button:hover {
+      background: #0a7acc;
+    }
+
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+
+    .status {
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .status.success {
+      background: #1e5631;
+      color: #7cf59a;
+    }
+
+    .status.error {
+      background: #5c1e1e;
+      color: #ff7b7b;
+    }
+
+    .status.info {
+      background: #1e3a5c;
+      color: #7baeff;
+    }
+
+    .workflow-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .workflow-item {
+      padding: 8px;
+      background: #2d2d2d;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .workflow-item:hover {
+      border-color: #0d99ff;
+    }
+
+    .workflow-item.selected {
+      background: #1e3a5c;
+      border-color: #0d99ff;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: #b0b0b0;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="section">
+      <div class="section-title">ComfyUI Connection</div>
+      <label>ComfyUI Server URL</label>
+      <input type="text" id="serverUrl" value="http://127.0.0.1:8188" placeholder="http://127.0.0.1:8188">
+      <button id="testConnection" style="margin-top: 8px;">Test Connection</button>
+      <div id="connectionStatus"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Workflows</div>
+      <button id="refreshWorkflows">Refresh Workflows</button>
+      <div id="workflowList" class="workflow-list"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Prompt</div>
+      <label>Text Prompt</label>
+      <textarea id="prompt" placeholder="Enter your prompt here..."></textarea>
+
+      <label style="margin-top: 8px;">Negative Prompt (optional)</label>
+      <textarea id="negativePrompt" placeholder="Enter negative prompt..."></textarea>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Generation Options</div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="useSelection">
+        <label for="useSelection" style="margin: 0;">Use Current Selection as Mask</label>
+      </div>
+
+      <div class="checkbox-group" style="margin-top: 8px;">
+        <input type="checkbox" id="useEntireImage" checked>
+        <label for="useEntireImage" style="margin: 0;">Use Entire Image as Input</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <button id="generateBtn">Generate with ComfyUI</button>
+      <div id="generationStatus"></div>
+    </div>
+  </div>
+
+  <script src="lib/CSInterface.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>

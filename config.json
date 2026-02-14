@@ -1,0 +1,106 @@
+{
+  "comfyui": {
+    "server_url": "http://127.0.0.1:8188",
+    "timeout_seconds": 300,
+    "poll_interval_ms": 1000,
+    "default_workflow": "text2img_workflow"
+  },
+  
+  "generation": {
+    "default_steps": 20,
+    "default_cfg": 8,
+    "default_sampler": "euler",
+    "default_scheduler": "normal",
+    "default_denoise": 1.0,
+    "default_seed_random": true
+  },
+  
+  "models": {
+    "default_checkpoint": "sd_xl_base_1.0.safetensors",
+    "checkpoints": [
+      "sd_xl_base_1.0.safetensors",
+      "sd_xl_refiner_1.0.safetensors",
+      "dreamshaper_xl.safetensors"
+    ],
+    "loras": [
+      "detail_tweaker.safetensors",
+      "add_detail.safetensors"
+    ],
+    "controlnets": [
+      "control_canny.safetensors",
+      "control_depth.safetensors",
+      "control_openpose.safetensors"
+    ]
+  },
+  
+  "photoshop": {
+    "default_output_format": "png",
+    "compression_quality": 9,
+    "auto_create_layer": true,
+    "layer_name_prefix": "ComfyUI_",
+    "preserve_transparency": true
+  },
+  
+  "workflows": {
+    "directory": "./workflows",
+    "auto_refresh": true,
+    "custom_workflows": {
+      "add_hat": {
+        "file": "add_hat_workflow.json",
+        "description": "Add a hat to the subject",
+        "category": "object_addition"
+      },
+      "remove_background": {
+        "file": "remove_bg_workflow.json",
+        "description": "Remove background from image",
+        "category": "editing"
+      },
+      "style_anime": {
+        "file": "anime_style_workflow.json",
+        "description": "Convert to anime style",
+        "category": "style"
+      }
+    }
+  },
+  
+  "ui": {
+    "show_advanced_options": false,
+    "enable_tooltips": true,
+    "theme": "dark",
+    "compact_mode": false
+  },
+  
+  "performance": {
+    "max_image_dimension": 2048,
+    "auto_downscale": true,
+    "cache_workflows": true,
+    "parallel_requests": false
+  },
+  
+  "presets": {
+    "portrait": {
+      "steps": 30,
+      "cfg": 7,
+      "sampler": "dpmpp_2m",
+      "denoise": 0.75
+    },
+    "landscape": {
+      "steps": 25,
+      "cfg": 8,
+      "sampler": "euler_a",
+      "denoise": 0.8
+    },
+    "quick_draft": {
+      "steps": 10,
+      "cfg": 6,
+      "sampler": "euler",
+      "denoise": 1.0
+    },
+    "high_quality": {
+      "steps": 50,
+      "cfg": 9,
+      "sampler": "dpmpp_2m_sde",
+      "denoise": 0.9
+    }
+  }
+}
