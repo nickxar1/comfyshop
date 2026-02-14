@@ -11,6 +11,14 @@ A powerful Photoshop plugin that integrates local ComfyUI workflows directly int
 - 💾 **Auto-Import**: Generated images automatically import back to Photoshop
 - 🌐 **Local Processing**: Everything runs on your machine with ComfyUI
 
+## Example
+
+Select an area in Photoshop, type a prompt, and hit Generate — the result is automatically imported as a new layer.
+
+| Select area + write prompt | ComfyUI processes the workflow | Result imported into Photoshop |
+|---|---|---|
+| ![Selection](docs/example-selection.png) | ![Processing](docs/example-comfyui.png) | ![Result](docs/example-result.png) |
+
 ## Architecture
 
 ```
